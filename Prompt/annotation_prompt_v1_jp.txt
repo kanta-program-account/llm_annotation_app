@@ -49,8 +49,7 @@ Your task:
 - "transcript": Japanese transcription, copied verbatim from input JSON
 
 1) Dimensional Emotion (Continuous Rating)
-Rate each dimension on a 1–7 integer scale, based on vocal tone/prosody and content.
-
+Rate each dimension on a 1–7 integer scale.
 Definitions:
 - Valence: 1 = very negative, 7 = very positive
 - Arousal: 1 = calm, quiet, low energy, 7 = excited, intense, high energy
@@ -58,66 +57,52 @@ Definitions:
 - Engagement: 1 = detached, uninterested, unexpressive, 7 = highly involved, expressive, attentive
 
 2) Categorical Emotion (Primary & All)
-
 (a) Primary Emotion
-Choose exactly ONE dominant emotion label from this EXACT 8-label list (the "Primary Emotion List"):
+Choose exactly ONE dominant emotion label from:
+Allowed labels for "primary_emotion.label" are strictly limited to:
 ["Angry", "Sad", "Happy", "Surprise", "Neutral", "Fear", "Disgust", "Contempt"]
-
-- If the emotion seems mixed or ambiguous, choose the single closest label from the allowed list.
-- If no strong emotion is present, use "Neutral".
-
-Also rate the intensity of the primary emotion on a 1–7 integer scale (1 = very weak, 7 = very strong).
+Do not use any label outside this list.
+Do not paraphrase, translate, generalize, or invent new emotion labels.
+If the emotion seems mixed or ambiguous, choose the single closest label from the allowed list.
+If no strong emotion is present, use "Neutral".
+Also rate the intensity of the primary emotion on a 1–7 scale:
+- 1 = very weak
+- 7 = very strong
 
 (b) All Emotions
-Select ALL applicable ADDITIONAL emotion labels — that is, emotions present in the segment
-OTHER THAN the primary emotion — from this EXACT 16-label list (the "All Emotions List"):
-["Angry", "Sad", "Happy", "Amused", "Neutral", "Frustrated", "Depressed", "Surprise",
- "Concerned", "Disgust", "Disappointed", "Excited", "Confused", "Annoyed", "Fear", "Contempt"]
-
-Output "all_emotions" as a LIST of objects, one object per selected label, each with its own
-intensity score (1–7 integer). Example:
-
-"all_emotions": [
-  {"label": "Annoyed", "intensity": 4},
-  {"label": "Amused", "intensity": 3}
-]
-
-Rules for all_emotions:
-- "all_emotions" represents SECONDARY/ADDITIONAL emotions only. The primary emotion is
-  reported separately in "categorical_emotion.primary_emotion" and must NOT be repeated
-  inside "all_emotions".
-  - Correct example: primary_emotion = Angry(5); all_emotions = [Surprise(3), Contempt(2)]
-  - Incorrect example: primary_emotion = Angry(5); all_emotions = [Angry(5), Surprise(3), Contempt(2)]
-    (do NOT duplicate the primary emotion inside all_emotions)
-- This list is allowed to contain MORE THAN ONE item. Do not collapse it to a single emotion
-  unless only one additional emotion is genuinely present.
-- Include only labels reasonably supported by the segment; do not assign every label.
-- If no additional emotion beyond the primary emotion is genuinely present, "all_emotions"
-  MAY be an empty list — do not force a duplicate or unsupported label into it just to
-  avoid emptiness.
+Select ALL applicable emotion labels from:
+["Angry", "Sad", "Happy", "Amused", "Neutral", "Frustrated", "Depressed", "Surprise", "Concerned", "Disgust", "Disappointed", "Excited", "Confused", "Annoyed", "Fear", "Contempt"]
+For each selected label, provide an intensity score from 1 to 7.
+Notes:
+- The primary emotion should generally also appear in the "all_emotions" field unless there is a strong reason not to.
+- Include only labels that are reasonably supported by the segment.
+- Do not assign every label; be selective.
 
 3) Interactional Features (Binary)
-For each feature, assign 1 (present) or 0 (absent):
-- empathy: shows understanding, care, or emotional resonance toward the partner
-- politeness: uses courteous, respectful, or socially softened language
-- disagreement: expresses contradiction, opposition, or challenge
-- tension: displays relational strain, discomfort, conflict, or friction
-- rapport: indicates warmth, comfort, affiliation, or connection
+For each feature, assign:
+- 1 = present
+- 0 = absent
+Definitions:
+- Empathy: shows understanding, care, or emotional resonance toward the partner
+- Politeness: uses courteous, respectful, or socially softened language
+- Disagreement: expresses contradiction, opposition, or challenge
+- Tension: displays relational strain, discomfort, conflict, or friction
+- Rapport: indicates warmth, comfort, affiliation, or connection
 
 4) Dialogue Act (Single Label)
-Choose exactly ONE most appropriate dialogue act from the allowed dialogue act list
-(as defined in the output schema).
+Choose exactly ONE most appropriate dialogue act from the following list:
+["Statement", "Backchannel/Acknowledge", "Opinion", "Abandoned/Uninterpretable", "Agreement/Accept", "Appreciation", "Yes-No-Question", "Non-verbal", "Yes Answers", "Conventional-closing", "WH-Question", "No Answers", "Response Acknowledgment", "Hedge", "Declarative Yes-No-Question", "Other", "Backchannel-Question", "Quotation", "Summarize/Reformulate", "Affirmative Non-Yes Answers", "Action-Directive", "Collaborative Completion", "Repeat-Phrase", "Open-Question", "Rhetorical-Questions", "Hold Before Answer/Agreement", "Reject", "Negative Non-No Answers", "Signal-Non-Understanding", "Other Answers", "Conventional-opening", "Or-Clause", "Dispreferred Answers", "3rd-Party-Talk", "Offers/Options/Commits", "Self-Talk", "Downplayer", "Maybe/Accept-Part", "Tag-Question", "Declarative WH-Question", "Apology", "Thanking"]
 
 5) Reasoning & Confidence
-- Provide a brief explanation for the above judgments, grounded in observable evidence
-  (tone, prosody, wording, timing, and surrounding conversational context).
+- Provide a brief explanation of why you made the above judgments.
+- Keep the reasoning concise, focused on observable evidence such as tone, prosody, wording, and interaction context.
 - The "reasoning" field must be written in Japanese.
-- Provide an overall confidence score as a float between 0 and 1
-  (0 = very uncertain, 1 = very confident).
+- Provide an overall confidence score from 0 to 1:
+  - 0 = very uncertain
+  - 1 = very confident
 
 Required output format:
-Return a single JSON array with exactly one object per input segment, in the same order
-as the input JSON. Do not omit, merge, split, or reorder segments.
+Return a JSON array in the following structure:
 
 [
   {
@@ -156,17 +141,14 @@ as the input JSON. Do not omit, merge, split, or reorder segments.
 ]
 
 Additional constraints:
-- "transcript" and "reasoning" must be written in Japanese.
-- The number of objects in the output array MUST equal the number of segments in the input JSON.
-- Preserve input order; do not shuffle segments.
-- If a segment is hard to interpret (e.g., overlapping speech, non-verbal sound, unclear audio),
-  still provide the best possible annotation for all fields and lower the confidence score
-  accordingly — never omit a segment or a required field.
-
-Note on output validity:
-The output is constrained by a JSON schema (field types, value ranges, and allowed enum values
-are enforced automatically). You do not need to double-check basic type/range/enum compliance —
-focus your attention on the semantic self-check below instead.
+- Use integers only for all 1–7 ratings and binary labels.
+- Use a float between 0 and 1 for confidence.
+- The "transcript" field must be written in Japanese.
+- The "reasoning" field must be written in Japanese only.
+- Ensure the output is valid JSON.
+- Do not omit any required fields.
+- If a segment is hard to interpret, still provide the best annotation and lower the confidence score.
+- Segment the audio into utterance-level units before annotation; do not return a single annotation for the whole audio.
 
 SELF-VERIFICATION (mandatory, before returning the final output):
 Before returning your final answer, re-check EVERY segment for the following semantic
@@ -176,15 +158,7 @@ membership is already guaranteed by the output schema, so do not spend effort re
 - Copied-from-input fields ("speaker", "start", "end", "multi_spk", "transcript") match the
   input JSON exactly — character-for-character for strings, value-for-value for numbers/booleans.
   Fix any dropped punctuation, altered spacing, or rounded numbers.
-- categorical_emotion.primary_emotion.label does NOT also appear as a "label" value inside
-  categorical_emotion.all_emotions — "all_emotions" must list only additional emotions distinct
-  from the primary emotion. If you find the primary emotion duplicated inside "all_emotions",
-  remove that duplicate entry before finalizing the output.
-- categorical_emotion.all_emotions may be an empty list when no additional emotion beyond the
-  primary is genuinely present; where more than one additional emotion is genuinely present,
-  it lists multiple items rather than omitting them.
-- Every other field required by the schema is present for every segment, and no extra,
-  undefined fields have been added.
+- Every other field required by the schema is present for every segment.
 - The output array length equals the input segment count, and segment order matches the
   input order exactly.
 
