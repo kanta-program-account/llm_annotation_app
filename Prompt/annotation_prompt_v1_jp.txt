@@ -20,7 +20,7 @@ Each segment in the input JSON includes:
 Each segment corresponds to one meaningful utterance or a short response unit
 (e.g., backchannels like "うん", "そうだね").
 
-IMPORTANT — Segmentation rules:
+IMPORTANT:
 - Use EXACTLY the segments provided in the input JSON.
 - Do NOT create new segments, do NOT merge multiple input segments into one,
   and do NOT split a single input segment into multiple outputs.
@@ -95,7 +95,12 @@ Choose exactly ONE most appropriate dialogue act from the following list:
 
 5) Reasoning & Confidence
 - Provide a brief explanation of why you made the above judgments.
-- Keep the reasoning concise, focused on observable evidence such as tone, prosody, wording, and interaction context.
+- Keep the reasoning concise, focused on all of the following items as much as possible, based on observable evidence:
+  - Tone: Describe the emotional quality conveyed (e.g., calm, irritated, enthusiastic, sarcastic) as inferred from word choice and phrasing.
+  - Prosody: Describe features of speech delivery such as pitch, rhythm, stress, pace, or intonation, if audio or transcript cues are available.
+  - Wording: Note specific word choices, phrasing patterns, or expressions that reveal attitude, intent, or emphasis.
+  - Interaction context: Consider the surrounding conversation (e.g. who is speaking, what preceded the statement, and any situational factors that shape its meaning)
+
 - The "reasoning" field must be written in Japanese.
 - Provide an overall confidence score from 0 to 1:
   - 0 = very uncertain

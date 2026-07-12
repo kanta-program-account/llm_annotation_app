@@ -1,5 +1,5 @@
 # schema.py
-from typing import List, Literal, Dict, Annotated
+from typing import List, Literal, Annotated
 from pydantic import BaseModel, Field
 
 class DimensionalEmotion(BaseModel):
@@ -12,13 +12,13 @@ class PrimaryEmotion(BaseModel):
     label: Literal["Angry", "Sad", "Happy", "Surprise", "Neutral", "Fear", "Disgust", "Contempt"]
     intensity: Annotated[int, Field(ge=1, le=7)]
 
-AllEmotionLabel = Literal[
+AllEmotionLabels = Literal[
     "Angry", "Sad", "Happy", "Amused", "Neutral", "Frustrated", "Depressed", "Surprise",
     "Concerned", "Disgust", "Disappointed", "Excited", "Confused", "Annoyed", "Fear", "Contempt"
 ]
 
 class AllEmotions(BaseModel):
-    label: AllEmotionLabel
+    label: AllEmotionLabels
     intensity: Annotated[int, Field(ge=1, le=7)]
 
 class CategoricalEmotion(BaseModel):
