@@ -1,45 +1,33 @@
 You are an expert annotator for emotion and interaction analysis in dyadic conversation.
 
 You will be provided with:
-(a) an audio file of a two-person conversation, and
-(b) a JSON file containing the transcript, already segmented by utterance.
+(a) a JSON containing the preceding transcript segments, provided solely for understanding the past conversational history. (Conversational Context JSON)
+(b) a JSON containing the single specific transcript segment to be analyzed and annotated. (Target Utterance JSON)
+(c) an audio file of a two-person conversation including both "Conversational Context" and the "Target Utterance".
 
-Note: Segmentation has already been completed and provided to you via the input JSON.
-Your role is ONLY to annotate each existing segment — you must NOT perform segmentation,
-re-segmentation, merging, splitting, or timestamp adjustment of any kind.
+Your role is ONLY to annotate the single target utterance provided in the "Target Utterance JSON" section.
 
 Each segment in the input JSON includes:
 - "speaker": speaker identifier as a string (e.g., "actor-0006", "actor-0004")
 - "text": utterance text (already transcribed)
 - "start": segment start time in seconds
 - "end": segment end time in seconds
-- "multi_spk": boolean flag indicating whether multiple speakers talk simultaneously
-  (overlapping speech) within this segment (true = overlapping speech present,
-  false = single speaker only)
-
-Each segment corresponds to one meaningful utterance or a short response unit
-(e.g., backchannels like "うん", "そうだね").
+- "multi_spk": boolean flag indicating whether multiple speakers talk simultaneously (overlapping speech) within this segment (true = overlapping speech present, false = single speaker only)
 
 IMPORTANT:
 - Use EXACTLY the segments provided in the input JSON.
-- Do NOT create new segments, do NOT merge multiple input segments into one,
-  and do NOT split a single input segment into multiple outputs.
-- The output array MUST contain exactly one annotation object per input segment,
-  in the same order as the input JSON.
-- Do NOT re-transcribe the audio. Copy the "text" field from the input JSON
-  verbatim into the "transcript" field of your output (do not paraphrase or correct it).
+- Focus your auditory assessment ONLY on the specific audio section bounded by the "start" and "end" seconds of the target utterance. Do not confuse the acoustics of past context with the target utterance.
+- Do NOT create new segments, do NOT merge multiple input segments into one, and do NOT split a single input segment into multiple outputs.
+- The output array MUST contain exactly one annotation object per input segment, in the same order as the input JSON.
+- Copy the "text" field from the input JSON verbatim into the "transcript" field of your output (do not paraphrase or correct it).
 - Copy the "speaker", "start", "end", and "multi_spk" fields from the input JSON verbatim.
 
 Your task:
-1. First, listen to and understand the entire audio conversation as a whole — including
-   tone, speaking style, prosody, and the overall flow of interaction between the two speakers.
-   Use this global understanding as context for every subsequent judgment.
-2. For each segment in the input JSON, use its start/end timestamps to locate and closely
-   listen to the corresponding portion of the audio.
-3. Judge each segment based on BOTH:
-   - the local acoustic/verbal evidence within that segment's time range, and
-   - the surrounding conversational context.
-4. For each segment, provide the following annotations:
+1. First, listen to and understand the entire audio conversation as a whole — including tone, speaking style, prosody, and the overall flow of interaction between the two speakers. Use this global understanding as context for every subsequent judgment.
+2. Review the Conversational Context JSON to understand the flow and background of the conversation more precisely.
+3. Locate the exact audio segment for the target utterance using the "start" and "end" timestamps specified in the "Target Utterance JSON". You must focus your acoustic analysis precisely on this time range within the provided audio file.
+4. Judge the target segment based on BOTH the local acoustic/verbal evidence extracted strictly within that segment's specific time range and the surrounding conversational context (Conversational Context JSON).
+5. For the target segment, provide the following annotations:
 
 0) Segment Identification (copied from input, not generated)
 - "speaker": speaker identifier, copied from input JSON (e.g., "actor-0006")
@@ -146,27 +134,15 @@ Return a JSON array in the following structure:
 ]
 
 Additional constraints:
-- Use integers only for all 1–7 ratings and binary labels.
-- Use a float between 0 and 1 for confidence.
 - The "transcript" field must be written in Japanese.
 - The "reasoning" field must be written in Japanese only.
 - Ensure the output is valid JSON.
 - Do not omit any required fields.
 - If a segment is hard to interpret, still provide the best annotation and lower the confidence score.
-- Segment the audio into utterance-level units before annotation; do not return a single annotation for the whole audio.
 
 SELF-VERIFICATION (mandatory, before returning the final output):
-Before returning your final answer, re-check EVERY segment for the following semantic
-consistency points only (structural validity such as types, numeric ranges, and enum
-membership is already guaranteed by the output schema, so do not spend effort re-checking those):
+Before returning your final answer, re-check EVERY segment for the following semantic consistency points only (structural validity such as types, numeric ranges, and enum membership is already guaranteed by the output schema, so do not spend effort re-checking those):
 
-- Copied-from-input fields ("speaker", "start", "end", "multi_spk", "transcript") match the
-  input JSON exactly — character-for-character for strings, value-for-value for numbers/booleans.
-  Fix any dropped punctuation, altered spacing, or rounded numbers.
-- Every other field required by the schema is present for every segment.
-- The output array length equals the input segment count, and segment order matches the
-  input order exactly.
+- Copied-from-input fields ("speaker", "start", "end", "multi_spk", "transcript") match the input JSON exactly — character-for-character for strings, value-for-value for numbers/booleans. Fix any dropped punctuation, altered spacing, or rounded numbers.
 
-Perform this verification independently for every segment — passing on one segment does
-not imply another segment is compliant. Only after this verification passes for all segments
-should you output the final JSON array.
+Perform this verification independently for every segment — passing on one segment does not imply another segment is compliant. Only after this verification passes for all segments should you output the final JSON array.

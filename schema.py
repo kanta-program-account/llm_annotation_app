@@ -56,6 +56,3 @@ class AnnotationSegment(BaseModel):
     dialogue_act: DialogueActLabels
     reasoning: str
     confidence: Annotated[float, Field(ge=0, le=1)]
-
-class FinalAnnotationResponse(BaseModel):
-    annotations: List[AnnotationSegment]
