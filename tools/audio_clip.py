@@ -1,4 +1,4 @@
-import wave
+import soundfile as sf
 import json
 import os
 import glob
@@ -29,27 +29,19 @@ def create_audio_clips(audio_file_path, json_file_path):
     start_time_sec = input_transcript[0]['start']
     end_times_list = [item["end"] for item in input_transcript]
 
-    clip_audio_list = []
+    data, framerate = sf.read(audio_file_path)
+    start_frame = int(start_time_sec * framerate)
 
-    with wave.open(audio_file_path, 'rb') as wf:
-        params = wf.getparams()
-        framerate = wf.getframerate()
-        start_frame = int(start_time_sec * framerate)
+    for i, end_time_sec in enumerate(end_times_list):
+        end_frame = int(end_time_sec * framerate)
+        
+        clip_data = data[start_frame:end_frame]
 
-        for i, end_time_sec in enumerate(end_times_list):
-            wf.setpos(start_frame)
+        clip_name = f'clip_{i}.wav'
+        output_path = os.path.join(clip_temp_dir_path, clip_name)
+        
+        sf.write(output_path, clip_data, framerate, subtype='PCM_16')
 
-            end_frame = int(end_time_sec * framerate)
-            num_frames = end_frame - start_frame
-
-            clip_audio = wf.readframes(num_frames)
-
-            clip_name = f'clip_{i}.wav'
-            output_path = os.path.join(clip_temp_dir_path, clip_name)
-            with wave.open(output_path, 'wb') as wf_out:
-                wf_out.setparams(params)
-                wf_out.writeframes(clip_audio)
-
-        clip_paths = glob.glob(os.path.join(clip_temp_dir_path, "*"))
+    clip_paths = sorted(glob.glob(os.path.join(clip_temp_dir_path, "*")))
         
     return clip_temp_dir_path, clip_paths
