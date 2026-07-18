@@ -5,6 +5,7 @@ import os
 import glob
 import shutil
 import time
+import argparse
 
 from schema import AnnotationSegment
 from tools.audio_clip import create_audio_clips
@@ -23,9 +24,14 @@ def main():
     Returns:
         None
     """
+
+    parser = argparse.ArgumentParser(description="Multimodal LLM Annotation Pipeline")
+    parser.add_argument("--include-past-anno", action="store_true", help="Include previously generated LLM annotation results in the Conversational Context JSON")
+    args = parser.parse_args() # args.include_past_anno = True/False
+
     AUDIO_DIR_PATH = "/home/kanta/llm_annotation_app/data/audio"
     JSON_INPUT_DIR_PATH = "/home/kanta/llm_annotation_app/data/json_input"
-    JSON_OUTPUT_DIR_PATH = "/home/kanta/llm_annotation_app/data/json_output"
+    JSON_OUTPUT_BASE_DIR_PATH = "/home/kanta/llm_annotation_app/data/json_output"
     PROMPT_PATH = "/home/kanta/llm_annotation_app/Prompt/annotation_prompt_v1_jp.txt"
     HYPER_PARAMS_PATH = "/home/kanta/llm_annotation_app/hyperparams.json"
 
@@ -55,7 +61,12 @@ def main():
         combined_annotations = []
 
         for target_utterance_idx, clip_audio_path in enumerate(clip_audio_paths):
-            context_json = input_transcript[:target_utterance_idx]
+
+            if args.include_past_anno:
+                context_json = input_transcript[:target_utterance_idx] if target_utterance_idx==0 else combined_annotations
+            else:
+                context_json = input_transcript[:target_utterance_idx]
+
             anno_target_json = input_transcript[target_utterance_idx]
 
             context_str = json.dumps(context_json, ensure_ascii=False, indent=2)
@@ -70,6 +81,8 @@ def main():
                 f"*NOTE: Only this specific utterance and its accompanying audio interval must be the subject of your annotation.*\n"
                 f"{anno_target_str}"
             )
+
+            print(dynamic_user_prompt)
 
             with open(clip_audio_path, "rb") as f:
                 audio_base64 = base64.b64encode(f.read()).decode("utf-8")
@@ -100,6 +113,7 @@ def main():
 
             print("\nSending a request to the local LLM server...\n")
 
+            # --- API request to the local llama.cpp server ---
             with httpx.Client() as client:
                 response = client.post(
                     "http://127.0.0.1:8080/v1/chat/completions",
@@ -109,15 +123,20 @@ def main():
 
             output_json = json.loads(response.json()["choices"][0]["message"]["content"])
             combined_annotations.append(output_json)
-
+        
+        # --- combine jsons ---
         full_output_json = {
             "annotations": combined_annotations
         }
 
+        # --- save json ---
+        json_output_dir_path = os.path.join(JSON_OUTPUT_BASE_DIR_PATH, "dynamic_prompt_with_anno" if args.include_past_anno else "dynamic_prompt_without_anno")
+        os.makedirs(json_output_dir_path, exist_ok=True)
+        
         annotated_json_name = "annotation_" + file_name
+        json_output_file_path = os.path.join(json_output_dir_path, annotated_json_name)
 
-        output_file_path = os.path.join(JSON_OUTPUT_DIR_PATH, annotated_json_name)
-        with open(output_file_path, 'w', encoding='utf-8') as f:
+        with open(json_output_file_path, 'w', encoding='utf-8') as f:
             json.dump(full_output_json, f, indent=4, ensure_ascii=False)
 
         if os.path.exists(clip_temp_dir_path):
@@ -126,6 +145,7 @@ def main():
         # --- time count ---
         elapsed = time.time() - start_time
         print(f"----- {file_name}: {elapsed:.2f}s -----")
+
 
 if __name__ == "__main__":
     main()
