@@ -24,7 +24,7 @@ def create_audio_clips(audio_file_path, json_file_path):
     os.makedirs(clip_temp_dir_path, exist_ok=True)
 
     with open(json_file_path, "r", encoding="utf-8") as f:
-        input_transcript = json.load(f)
+        input_transcript = json.load(f)["utterances"]
 
     start_time_sec = input_transcript[0]['start']
     end_times_list = [item["end"] for item in input_transcript]

@@ -9,6 +9,7 @@ import argparse
 
 from schema import AnnotationSegment
 from tools.audio_clip import create_audio_clips
+from tools.file_checker import check_file_exists
 
 def main():
     """Run the multimodal LLM emotion and interaction annotation pipeline.
@@ -35,18 +36,36 @@ def main():
     PROMPT_PATH = "/home/kanta/llm_annotation_app/Prompt/annotation_prompt_v1_jp.txt"
     HYPER_PARAMS_PATH = "/home/kanta/llm_annotation_app/hyperparams.json"
 
+    json_output_dir_path = os.path.join(
+        JSON_OUTPUT_BASE_DIR_PATH,
+        (
+            "dynamic_prompt_with_anno"
+            if args.include_past_anno
+            else "dynamic_prompt_without_anno"
+        ),
+    )
+    os.makedirs(json_output_dir_path, exist_ok=True)
+
     audio_file_paths = sorted(glob.glob(os.path.join(AUDIO_DIR_PATH, "*.wav")))
     json_file_paths = sorted(glob.glob(os.path.join(JSON_INPUT_DIR_PATH, "*.json")))
 
-    for audio_file_path, json_file_path in zip(audio_file_paths, json_file_paths):
+    for json_file_path in json_file_paths:
         
         file_name = os.path.basename(json_file_path)
+        file_stem = os.path.splitext(file_name)[0]
+
+        audio_file_path = os.path.join(AUDIO_DIR_PATH, f"{file_stem}.wav")
+
+        annotated_json_name = "annotation_" + file_name
+        json_output_file_path = os.path.join(json_output_dir_path, annotated_json_name)
+
+        if check_file_exists(json_output_file_path):
+            continue
         
         start_time = time.time() # count the processing duration per scenario
 
         with open(json_file_path, "r", encoding="utf-8") as f:
-            input_transcript = json.load(f)
-            input_transcript_str = json.dumps(input_transcript, ensure_ascii=False)
+            input_transcript = json.load(f)['utterances']
 
         with open(PROMPT_PATH, "r", encoding="utf-8") as f:
             user_prompt = f.read()
@@ -82,7 +101,7 @@ def main():
                 f"{anno_target_str}"
             )
 
-            print(dynamic_user_prompt)
+            # print(dynamic_user_prompt)
 
             with open(clip_audio_path, "rb") as f:
                 audio_base64 = base64.b64encode(f.read()).decode("utf-8")
@@ -111,7 +130,7 @@ def main():
 
             payload.update(hparams)
 
-            print("\nSending a request to the local LLM server...\n")
+            print(f"\nSending a request for '{file_name}[{target_utterance_idx}]' to the local LLM server...\n")
 
             # --- API request to the local llama.cpp server ---
             with httpx.Client() as client:
@@ -133,7 +152,6 @@ def main():
         json_output_dir_path = os.path.join(JSON_OUTPUT_BASE_DIR_PATH, "dynamic_prompt_with_anno" if args.include_past_anno else "dynamic_prompt_without_anno")
         os.makedirs(json_output_dir_path, exist_ok=True)
         
-        annotated_json_name = "annotation_" + file_name
         json_output_file_path = os.path.join(json_output_dir_path, annotated_json_name)
 
         with open(json_output_file_path, 'w', encoding='utf-8') as f:
