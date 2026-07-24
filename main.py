@@ -10,6 +10,7 @@ import argparse
 from schema import AnnotationSegment
 from tools.audio_clip import create_audio_clips
 from tools.file_checker import check_file_exists
+from tools.self_verificate import self_verificate
 
 def main():
     """Run the multimodal LLM emotion and interaction annotation pipeline.
@@ -156,6 +157,10 @@ def main():
 
         with open(json_output_file_path, 'w', encoding='utf-8') as f:
             json.dump(full_output_json, f, indent=4, ensure_ascii=False)
+
+        # --- verify generated json ---
+        error_output_file_path = os.path.join(json_output_dir_path, "error", f"error_{annotated_json_name}")
+        self_verificate(input_path=json_output_file_path, output_path=error_output_file_path)
 
         if os.path.exists(clip_temp_dir_path):
             shutil.rmtree(clip_temp_dir_path)
